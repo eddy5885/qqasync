@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: jsbridge: mqq: mqqapi: https: *.qq.com *.tenpay.com *.gtimg.cn *.baidu.com *.gtimg.com *.idqqimg.com *.jd.com *.360buyimg.com *.qlogo.cn *.tenpay.com *.qpic.cn *.jd.com *.360buyimg.com *.wgimg.com *.soso.com *.myapp.com *.sogoucdn.com *.paipaiimg.com *.diditaxi.com.cn *.wepiao.com *.meituan.com *.elong.cn *.dianping.com *.xiaojukeji.com *.dpfile.com *.futunn.com; report-uri http://cgi.vip.qq.com/cspreport">
+
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<script>var qqapiEndTime = new Date;</script>
+<style>
+    #mydiv{
+		width:300px;
+		height:400px;
+		background: #f8f2f8;
+		border:10px solid #ccc;
+		border-radius:10px;
+    }
+</style>
+<body>
+<div style="width:500px;height: 600px; background:#f1f1f1; "></div>
+<script type="text/javascript" src="http://imgcache.qq.com/club/platform/lib/qqasync/qqasync-debug.js"></script>
+<script type="text/javascript">
+// var requestStart = +new Date();
+// var a = qqasync.use({
+//     files: ['http://i.gtimg.cn/club/common/lib/et/dest/et.min.js?_bid=2372&max_age=2592000&v=37',
+//      'http://pub.idqqimg.com/qqmobile/qqapi.js?_bid=152&v=1', 
+//      'http://imgcache.gtimg.cn/club/platform/lib/pay/smartpay.js?_bid=193&max_age=2592000',
+//      'http://i.gtimg.cn/club/common/lib/zero/zero.m.min-5.1.1.js?_bid=2373&max_age=2592000&v=111'],
+//     callback: function() {
+//         var requestEnd = +new Date();
+//         console.log(requestEnd - requestStart);
+//     },
+//     localcache: 1,
+// });
+</script>
+<script type="text/javascript">
+// var requestStart = +new Date();
+// qqasync.use({
+//     files: ['http://imgcache.qq.com/club/platform/lib/qqasync/testjs/1.js',
+//      'http://imgcache.qq.com/club/platform/lib/qqasync/testjs/2.js', 
+//      'http://imgcache.qq.com/club/platform/lib/qqasync/testjs/3.js',
+//      'http://imgcache.qq.com/club/platform/lib/qqasync/testjs/4.js?v=1'],
+//     callback: function() {
+//         var requestEnd = +new Date();
+//         console.log(requestEnd - requestStart);
+//     },
+//     localcache:1
+// });
+// qqasync.localcache()
+//     .add("http://imgcache.qq.com/club/platform/lib/qqasync/testjs/1.js")
+//     .add("http://imgcache.qq.com/club/platform/lib/qqasync/testjs/2.js")
+//     .add(["http://imgcache.qq.com/club/platform/lib/qqasync/testjs/3.js","http://imgcache.qq.com/club/platform/lib/qqasync/testjs/4.js"])
+//     .add(function(){
+//     }).fire();
+var requestStart = +new Date();
+qqasync.localcache();
+qqasync.add("http://imgcache.qq.com/club/platform/lib/qqasync/testjs/1.js");
+qqasync.add("http://imgcache.qq.com/club/platform/lib/qqasync/testjs/2.js");
+qqasync.add(["http://imgcache.qq.com/club/platform/lib/qqasync/testjs/3.js", "http://imgcache.qq.com/club/platform/lib/qqasync/testjs/4.js"]);
+qqasync.add(function() {
+    var requestEnd = +new Date();
+    console.log(requestEnd - requestStart);
+});
+qqasync.fire();
+</script>
+<!-- <script src="http://i.gtimg.cn/club/common/lib/et/dest/et.min.js?_bid=2372&max_age=2592000"></script>
+<script src="http://pub.idqqimg.com/qqmobile/qqapi.js?_bid=152"></script>
+<script src="http://imgcache.gtimg.cn/club/platform/lib/pay/smartpay.js?_bid=193&max_age=2592000"></script>
+<script src="http://i.gtimg.cn/club/common/lib/zero/zero.m.min-5.1.1.js?_bid=2373&max_age=2592000"></script>
+<script>
+var requestEnd = +new Date();
+    console.log(requestEnd - requestStart);
+</script> -->
+</body>
+</html>
