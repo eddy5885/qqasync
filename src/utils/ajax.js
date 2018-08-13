@@ -1,3 +1,4 @@
+//ajax 拉取数据
 export default function fetchAjax(url, callback) {
     var xhr = new global.XMLHttpRequest()
     var timer = setTimeout(function() {
