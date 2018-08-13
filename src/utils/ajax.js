@@ -1,9 +1,16 @@
 //ajax 拉取数据
-export default function fetchAjax(url, callback) {
+import compass from './compass.js';
+import storage from './localstorage.js';
+import logger from './logger.js';
+
+import {asyncExec,changeFilesStatus,getUrlwithoutPara} from './tools.js';
+
+var requestInfo = {};
+export default function fetchAjax(url, data) {
     var xhr = new global.XMLHttpRequest()
     var timer = setTimeout(function() {
         xhr.abort()
-        callback && callback(null)
+        
     }, 30000);
     xhr.open('GET', url, true)
     xhr.onreadystatechange = function() {
@@ -27,7 +34,7 @@ export default function fetchAjax(url, callback) {
                 }
                 //如果开启了缓存，还有内容来自请求，要么是第一次，要么有版本号修改，重新缓存请求的内容
                 if (data.localcache) {
-                    storage.set(getUrlwithoutParam(url), xhr.responseText);
+                    storage.set(getUrlwithoutPara(url), xhr.responseText);
                 }
                 if (!requestInfo[url]) {
                     compass(1);
@@ -35,7 +42,7 @@ export default function fetchAjax(url, callback) {
                     compass(2);
                 }
             } else {
-                callback && callback(null);
+                ;
                 //失败重试一次，且上报错误
                 logger(url + "ajax request fail!");
                 if (!requestInfo[url]) {

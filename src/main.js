@@ -1,54 +1,79 @@
     import evalCode from './utils/eval';
     import logger from './utils/logger';
-    import localstorage from './utils/localstorage';
+    import storage from './utils/localstorage';
     import fetchAjax from './utils/ajax';
+    import {syncExec,asyncExec,changeFilesStatus,getUrlwithoutPara} from './utils/tools.js'
 
 
-    var qqasync = {
-        version: "1.0.0"
+    var qqasync =  {
+        version: "1.0.1"
     }
     var data = qqasync.data = {};
-    //异步加载的js文件
-    data.files = [];
-    //js文件加载完后执行的回调
-    data.callback = function() {};
+    data.base = location.host + location.pathname + "_qqasync_mainfest";
+    //初始化传入的文件列表
+    var fileList = [];
+    //文件的执行状态
+    data.fecthedList = {}; 
+    //所有文件加载完后执行的回调
+    data.callbackList = [];
     //是否开启localStorage缓存
     data.localcache = false;
-    //是否全部来自缓存标识，如果全部来自缓存，同步执行
+    //是否文件内容全部来自缓存（如果全部来自缓存，同步执行）
     var isAllfromCache = true; 
+    //初始化传入的文件个数
+    var fileCount = 0;
+    //被执行的文件个数
+    var executedTime = 0;
+    //被下载的文件个数（也是该文件下载的顺序）
+    var loadedOrder = 0;
+    //整体状态 0: 初始值 1：添加文件中 2：添加回调函数中 3：执行中
+    var status = 0;
+    //是否执行中
+    var firing = false;
     //入口文件
-    qqasync.use = function(configData) { 
+    qqasync.use = function(configData) {
         for (var key in configData) {
-            var curr = configData[key]
-            data[key] = curr;
+            var curr = configData[key];
+            if (key === "files") {
+                fileList = curr;
+            } else if (key === "callback") {
+                data.callbackList = [curr];
+            } else if (key === "localcache") {
+                data.localcache = curr;
+            }
+        }
+        request();
+    }
+    function request(){
+        fileCount = fileList.length;
+        if (!fileCount) {
+            console && console.log("files can not be empty!")
+            return;
         }
         //哪怕开启了localStorage，只要不支持localStorage，当未开启处理
-        if(data.localcache && !window.localStorage){
-            data.localcache = false;
-        }
-        if (data.localcache) {
-            if (!data.urlKey) {
-                data.urlKey = location.host + "_qqasync_mainfest";
+        if (data.localcache){
+            if(!global.localStorage){
+                data.localcache = false;
+            }else{
+                var manifest = parseMap();
+                if (!storage.get(data.base)) {
+                    //如果开启缓存，设置主key，value为初始化传入的文件对象
+                    storage.set(data.base, JSON.stringify(manifest));
+                }
             }
-            if (!storage.get(data.urlKey)) {
-                storage.set(data.urlKey, JSON.stringify(data.files));
-            }
-        }
-        //并行发请求
+        } 
+        //并行发请求(所有文件)
         setRequest();
-        //如果开启缓存&&有非缓存内容，则可能url有变化（包括修改版本号），重新设置key
-        if (data.localcache && !isAllfromCache) {
-            storage.set(data.urlKey, JSON.stringify(data.files));
+        //如果开启缓存并且有内容来自非缓存，则可能新增文件或者url有变化（包括修改版本号），重新设置版本号管理（url每个页面一个保证能重新设置）
+        if (data.localcache) {
+            console && console.log("all request from cache: " + isAllfromCache);
+            if (!isAllfromCache) {
+                storage.set(data.base, JSON.stringify(manifest));
+            } else {
+                //如果内容全部来自缓存，同步执行下载的文件（异步内容的执行在回调中）
+                syncExec(data,fileList);
+            }
         }
-        console && console.log("is All from Cache: " + isAllfromCache);
-        if (data.localcache && isAllfromCache) {
-            //同步执行
-            syncexec(); 
-        } else {
-            //异步执行
-            asyncexec(); 
-        }
-
         return global;
     }
     function setRequest() {
@@ -62,15 +87,15 @@
                 if (urlKeyValue && urlKeyValue.indexOf(files[i]) != -1) {
                     //如果单个url作为key有数据
                     if (storage.get(files[i])) {
-                        setJScriptState(files[i], storage.get(files[i]));
+                        changeFilesStatus(data,files[i], storage.get(files[i]));
                     } else {
                         isAllfromCache = false;
-                        fetchAjax(files[i]);
+                        fetchAjax(files[i],data);
                     }
                 //cache没有数据
                 } else {//debugger;
                     isAllfromCache = false;
-                    fetchAjax(files[i]);
+                    fetchAjax(files[i],data);
                     //url修改参数，清除旧文件
                     var cleanurl = getUrlwithoutPara(files[i]);
                     if(urlKeyValue){
@@ -85,79 +110,11 @@
                 }
             } else {
                 isAllfromCache = false;
-                fetchAjax(files[i]);
+                fetchAjax(files[i],data);
             }
             i++;
         }
         return true;
     }
 
-    function getUrlwithoutPara(url) {
-        var index = url.indexOf("?");
-        if(index == -1){
-            return url;
-        }
-        return url.substr(0, url.indexOf("?"));
-    }
 
-    function asyncexec() {
-        var file = data.files.shift();
-        var timer = 0;
-        var interval = setInterval(function() {
-            timer++
-            //如果加载好了，且没有执行则执行，执行完后去下一个js
-            //debugger;
-            if (data['files']['loading'] && data['files']['loading'][file]) {
-                var tmpFile = data['files']['loading'][file];
-                //文件已下载&&未执行
-                if (tmpFile['loaded'] && !tmpFile['executed']) {
-                    evalCode(file, tmpFile['code']);
-                    //执行完修改状态
-                    tmpFile['executed'] = true;
-                    file = data.files.shift();
-                    //全部执行完，执行回调
-                    if (!file) {
-                        data.callback();
-                        clearInterval(interval);
-                    }
-                }
-            }
-            //超时控制，防止中间有js加载失败
-            if (timer >= 8000) {
-                clearInterval(interval);
-            }
-        }, 5);
-    }
-
-    //同步按照加载的文件顺序执行
-    function syncexec() {
-        var file = data.files.shift();
-        while (file) {
-            if (data['files']['loading'] && data['files']['loading'][file]) {
-                var tmpFile = data['files']['loading'][file];
-                //文件已下载&&未执行
-                if (tmpFile['loaded'] && !tmpFile['executed']) {
-                    evalCode(file, tmpFile['code']);
-                    //执行完修改状态
-                    tmpFile['executed'] = true; 
-                    file = data.files.shift();
-                    //全部执行完，执行回调
-                    if (!file) {
-                        data.callback();
-                    }
-                }
-            }
-        }
-    }
-    var requestInfo = {};
-    
-    function setJScriptState(url, responseText) {
-        if (!data.files.loading) {
-           data.files.loading = {}; 
-        }
-        data['files']['loading'][url] = {
-            loaded: true,
-            executed: false,
-            code: responseText
-        }
-    }
