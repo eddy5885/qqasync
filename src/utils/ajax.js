@@ -50,3 +50,4 @@ export default function fetchAjax(url, callback) {
     }
     xhr.send(null)
 }
+//注释13：03
