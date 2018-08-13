@@ -13,3 +13,4 @@ export default function(str) {
         img.src = reportURL;
     } catch (e) {}
 }
+//sdfsdfjsdlfjsldfjsldkf 
